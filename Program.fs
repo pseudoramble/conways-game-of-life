@@ -43,58 +43,46 @@ let printBoard board boardSize =
     Array2D.iteri (fun i j cell ->
         let cellPrint =
             match cell with
-            | Edge -> " "
+            | Edge -> ""
             | Dead -> " "
             | Alive -> "*"
-        
+
         if j % boardSize = 0
         then printfn "%4s" cellPrint
         else printf "%4s" cellPrint
     ) board
 
+let setupInitialBoard fileName =
+    let fileLines = System.IO.File.ReadAllLines fileName
+    let edgeRow = Array.init (Array.length fileLines + 2) (fun _ -> "e") |> (fun er -> String.Join(",", er))
+    let inputRows =
+        fileLines
+        |> Array.map (fun ir -> sprintf "e,%s,e" ir)
+        |> Array.append [| edgeRow |]
+        |> Array.rev
+        |> Array.append [| edgeRow |]
+        |> Array.rev
+        |> Array.map (fun r -> r.Split [| ',' |])
+
+    inputRows
+    |> array2D
+    |> Array2D.map (fun cell -> match cell with | "a" | "A" -> Alive | "d" | "D" -> Dead | _ -> Edge)
+
 [<EntryPoint>]
 let main argv =
-    let blinkerInitBoard = array2D [|
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Alive; Alive; Alive; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-    |]
-    let toadInitBoard = array2D [|
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Alive; Alive; Alive; Dead; Edge |]
-        [| Edge; Dead; Alive; Alive; Alive; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-    |]
-    let gliderInitBoard = array2D  [|
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-        [| Edge; Dead; Dead; Alive; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Alive; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Alive; Alive; Alive; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead;Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead;Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead;Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead;Edge |]
-        [| Edge; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Dead; Edge |]
-        [| Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge; Edge |]
-    |]
-    
-    let mutable board = gliderInitBoard
+    let initialBoardFilename = 
+        if Array.length argv > 0
+        then argv.[0]
+        else "samples/glider.txt"
+    printfn "%s" initialBoardFilename
+
+    let mutable board = setupInitialBoard initialBoardFilename
     let boardSize = Array2D.length1 board
 
     while true do
         System.Console.Clear()
         printBoard board boardSize
         board <- nextBoard board
-        Threading.Thread.Sleep(500)
+        Threading.Thread.Sleep(100)
 
     0
