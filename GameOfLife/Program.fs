@@ -70,11 +70,12 @@ let setupInitialBoard fileName =
 
 [<EntryPoint>]
 let main argv =
+    let customFileIndex = Array.tryFindIndex (fun arg -> arg = "--file" || arg = "-f") argv |> Option.defaultValue -1
     let initialBoardFilename = 
-        if Array.length argv > 0
-        then argv.[0]
+        if customFileIndex > -1
+        then argv.[customFileIndex + 1]
         else "samples/glider.txt"
-    printfn "%s" initialBoardFilename
+    let isInteractive = Array.exists (fun arg -> arg = "-i" || arg = "--interactive") argv
 
     let mutable board = setupInitialBoard initialBoardFilename
     let boardSize = Array2D.length1 board
@@ -83,6 +84,9 @@ let main argv =
         System.Console.Clear()
         printBoard board boardSize
         board <- nextBoard board
-        Threading.Thread.Sleep(100)
+
+        if isInteractive
+        then System.Console.ReadLine() |> ignore
+        else Threading.Thread.Sleep(100)
 
     0
