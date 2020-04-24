@@ -7,17 +7,38 @@ module Board =
     open Avalonia.FuncUI.DSL
     open Avalonia.FuncUI.Types
 
-    type State = { board: GameOfLife.BoardState [,] }
+    type State = {
+        board: GameOfLife.BoardState [,]
+        file: string
+        interval: int
+        isPlaying: bool
+    }
 
-    type Msg = | Next
+    type Msg = 
+        Next
+        | Play
+        | Pause
+        | Reload
+        | SetInterval of int
+        | SetFile of string
 
     let init =
-        let initialBoardFilename = "../samples/glider.txt"
-        { board = GameOfLife.setupInitialBoard initialBoardFilename }
+        let initialBoardFilename = "./samples/glider.txt"
+        {
+            board = GameOfLife.setupInitialBoard initialBoardFilename
+            file = initialBoardFilename
+            isPlaying = false
+            interval = 200
+        }
 
     let update (message: Msg) (state: State) : State =
         match message with
         | Next -> { state with board = GameOfLife.nextBoard state.board }
+        | Play -> { state with isPlaying = true; }
+        | Pause -> { state with isPlaying = false }
+        | Reload -> { state with board = GameOfLife.setupInitialBoard state.file }
+        | SetFile f -> { state with file = f }
+        | SetInterval time -> { state with interval = time }
     
     let toBoardCell i j (cell: GameOfLife.BoardState) =
         let cellText =
@@ -51,15 +72,54 @@ module Board =
             DockPanel.dock Dock.Top
             DockPanel.children [
                 UniformGrid.create [
+                    UniformGrid.minHeight 635.0
                     UniformGrid.columns trimmedWidth
                     UniformGrid.rows trimmedHeight
                     UniformGrid.dock Dock.Top
                     UniformGrid.children (boardCells |> Seq.toList)
                 ]
-                Button.create [
-                    Button.dock Dock.Bottom
-                    Button.content "Next ->"
-                    Button.onClick (fun _ -> dispatch Next)
+                StackPanel.create [
+                    StackPanel.dock Dock.Bottom
+                    StackPanel.children [
+                        Button.create [
+                            Button.dock Dock.Bottom
+                            Button.content "Next"
+                            Button.onClick (fun _ -> dispatch Next)
+                        ]
+                        if state.isPlaying
+                        then Button.create [
+                                Button.dock Dock.Bottom
+                                Button.content "Pause"
+                                Button.onClick (fun _ -> dispatch Pause)
+                            ]
+                        else Button.create [
+                                Button.dock Dock.Bottom
+                                Button.content "Play"
+                                Button.onClick (fun _ -> dispatch Play)
+                            ]
+                        TextBox.create [
+                            TextBox.text "200"
+                            TextBox.onTextChanged (fun t ->
+                                let time =
+                                    if t <> "" && not (isNull t)
+                                    then int t
+                                    else 200
+
+                                dispatch (SetInterval time)
+                            )
+                        ]
+                        TextBox.create [
+                            TextBox.text state.file
+                            TextBox.onTextChanged (fun f ->
+                                dispatch (SetFile f)
+                            )
+                        ]
+                        Button.create [
+                            Button.dock Dock.Bottom
+                            Button.content "Load Game"
+                            Button.onClick (fun _ -> dispatch Reload)
+                        ]
+                    ]
                 ]
             ]
         ]

@@ -2,19 +2,18 @@
 
 A classic CS game to explore cellular automata. The inventor of Game of Life, John Conway, passed away on April 11th, 2020. This is my very primitive implementation of said game.
 
-![Simple glider demo](./demo.gif)
+![Simple glider demo](./demo-gui.gif)
 
 ## Running
 
 Install .NET Core 3.x. Clone this repo. From the command line:
 
-    dotnet run
+    cd ConwaysGameOfLife
+    dotnet run --project UI
 
-If you want to try another sample, specify it as the 1st argument:
+This will load the UI and allow you to load files, step through the sequence, or play through the entire sequence. 
 
-    dotnet run -- samples/blinker.txt
-
-Feel free to add your own samples into the samples folder.
+Feel free to add your own samples into the samples folder. Simply type in the new file name once it's loaded in to play it.
 
 ## Assumptions/Limitations
 
