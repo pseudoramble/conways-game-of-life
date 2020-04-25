@@ -6,86 +6,111 @@ namespace UI
 /// of your application, Please refer to the `view` function
 /// to see how to handle different kinds of "*child*" controls
 module Shell =
-    open System.Timers
-    open Elmish
-    open Avalonia
-    open Avalonia.Controls
-    open Avalonia.Input
-    open Avalonia.FuncUI.DSL
-    open Avalonia.FuncUI
-    open Avalonia.FuncUI.Builder
-    open Avalonia.FuncUI.Components.Hosts
-    open Avalonia.FuncUI.Elmish
+  open System.Timers
+  open Elmish
+  open Avalonia.Controls
+  open Avalonia.FuncUI.DSL
+  open Avalonia.FuncUI
+  open Avalonia.FuncUI.Components.Hosts
+  open Avalonia.FuncUI.Elmish
 
+  type State = {
+    editorState: Editor.State;
+    gameList: string array
+    playerState: Player.State;
+    timer: Timer
+  }
 
-    type State =
-        /// store the child state in your main state
-        { boardState: Board.State; timer: Timer }
+  type Msg =
+  | EditorMsg of Editor.Msg
+  | PlayerMsg of Player.Msg
 
-    type Msg =
-        | BoardMsg of Board.Msg
+  module Subscriptions =
+    let playing (timer: Timer) =
+      let sub dispatch =
+        timer.Elapsed.AddHandler(fun _ _ -> dispatch (PlayerMsg Player.Msg.Next))
+        
+      Cmd.ofSub sub
 
+  let init timer =
+    let gameList = GameOfLife.GameOfLife.getGameList ()
+    let firstGame = if (Array.isEmpty gameList) then "toad" else Array.head gameList
+    let state = {
+      editorState = Editor.init;
+      gameList = gameList;
+      playerState = Player.init firstGame;
+      timer = timer;
+    }
 
-    module Subscriptions =
-        let playing (timer: Timer) =
-            let sub dispatch =
-                timer.Elapsed.AddHandler(fun _ _ -> dispatch (BoardMsg Board.Msg.Next))
-                
-            Cmd.ofSub sub
+    (state, Cmd.none) // Cmd.batch [ aboutCmd ]
 
-    let init timer =
-        let boardState = Board.init
-        { boardState = boardState; timer = timer; },
-        /// If your children controls don't emit any commands
-        /// in the init function, you can just return Cmd.none
-        /// otherwise, you can use a batch operation on all of them
-        /// you can add more init commands as you need
-        Cmd.none
-        // Cmd.batch [ aboutCmd ]
+  let update (msg: Msg) (state: State): State * Cmd<_> =
+    match msg with
+    | EditorMsg editorMsg ->
+      let editorState = Editor.update editorMsg state.editorState
 
-    let update (msg: Msg) (state: State): State * Cmd<_> =
-        match msg with
-        | BoardMsg boardMsg ->
-            let boardState = Board.update boardMsg state.boardState
-            
-            match boardMsg with
-            | Board.Msg.Play _ ->
-                state.timer.Interval <- double boardState.interval
-                state.timer.Enabled <- true
-            | Board.Msg.Pause ->
-                state.timer.Enabled <- false
-            | _ -> ()
+      { 
+        state with
+          editorState = editorState;
+          gameList = GameOfLife.GameOfLife.getGameList ()
+      }, Cmd.none
+    | PlayerMsg boardMsg ->
+      let playerState = Player.update boardMsg state.playerState
+    
+      match boardMsg with
+      | Player.Msg.Play _ ->
+        state.timer.Interval <- double playerState.interval
+        state.timer.Enabled <- true
+      | Player.Msg.Pause ->
+        state.timer.Enabled <- false
+      | _ -> ()
 
-            { state with boardState = boardState }, Cmd.none
+      { state with playerState = playerState }, Cmd.none
 
-    let view (state: State) (dispatch) =
-        DockPanel.create [
-            DockPanel.children [
-                (Board.view state.boardState (BoardMsg >> dispatch))
+  let view (state: State) (dispatch) =
+    DockPanel.create [
+      DockPanel.verticalAlignment Avalonia.Layout.VerticalAlignment.Stretch
+      DockPanel.children [
+        TabControl.create [
+          TabControl.viewItems [
+            TabItem.create [
+              TabItem.header "Player"
+              TabItem.content (
+                Player.view state.playerState state.gameList (PlayerMsg >> dispatch)
+              )
             ]
+            TabItem.create [
+              TabItem.header "Editor"
+              TabItem.content (
+                Editor.view state.editorState state.gameList (EditorMsg >> dispatch)
+              )
+            ]
+          ]
         ]
+      ]
+    ]
 
-    /// This is the main window of your application
-    /// you can do all sort of useful things here like setting heights and widths
-    /// as well as attaching your dev tools that can be super useful when developing with
-    /// Avalonia
-    type MainWindow() as this =
-        inherit HostWindow()
-        do
-            base.Title <- "Conway's Game of Life"
-            base.Width <- 1024.0
-            base.Height <- 768.0
-            base.MinWidth <- 800.0
-            base.MinHeight <- 600.0
+  /// This is the main window of your application
+  /// you can do all sort of useful things here like setting heights and widths
+  /// as well as attaching your dev tools that can be super useful when developing with
+  /// Avalonia
+  type MainWindow() as this =
+    inherit HostWindow()
+    do
+      base.Title <- "Conway's Game of Life"
+      base.Width <- 1000.0
+      base.Height <- 800.0
+      base.MinWidth <- 800.0
+      base.MinHeight <- 600.0
 
-            //this.VisualRoot.VisualRoot.Renderer.DrawFps <- true
-            //this.VisualRoot.VisualRoot.Renderer.DrawDirtyRects <- true
+      //this.VisualRoot.VisualRoot.Renderer.DrawFps <- true
+      //this.VisualRoot.VisualRoot.Renderer.DrawDirtyRects <- true
 
-            let timer = new Timer()
-            timer.AutoReset <- true
-            timer.Enabled <- false
+      let timer = new Timer()
+      timer.AutoReset <- true
+      timer.Enabled <- false
 
-            Elmish.Program.mkProgram (fun () -> init timer) update view
-            |> Program.withHost this
-            |> Program.withSubscription (fun _ -> Subscriptions.playing timer)
-            |> Program.run
+      Elmish.Program.mkProgram (fun () -> init timer) update view
+      |> Program.withHost this
+      |> Program.withSubscription (fun _ -> Subscriptions.playing timer)
+      |> Program.run
