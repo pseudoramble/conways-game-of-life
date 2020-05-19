@@ -6,6 +6,17 @@ A classic CS game to explore cellular automata. The inventor of Game of Life, Jo
 
 ## Running
 
+1. Install .NET Core 3.1. [See specific instructions here](https://docs.microsoft.com/en-us/dotnet/core/install/runtime?pivots=os-windows).
+    * Windows installer: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-aspnetcore-3.1.4-windows-x64-installer.
+    * macOS installer: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-3.1.4-macos-x64-installer
+2. Download a release.
+3. Unzip the contents onto your computer. 
+4. Open the folder and click on the file named "UI".
+    * If this does not work, open a command prompt and run it from there.
+    * Type something like `cd Folder_Where_Files_Were_Unzipped_Into`, then `UI`.
+
+## Development
+
 Install .NET Core 3.x. Clone this repo. From the command line:
 
     cd ConwaysGameOfLife
