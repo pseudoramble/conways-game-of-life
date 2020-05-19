@@ -21,6 +21,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="samples\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
         <EmbeddedResource Remove=".template.config\**" />
     </ItemGroup>
 
